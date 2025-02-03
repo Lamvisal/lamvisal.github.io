@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Bốc Thăm Chọn Bảng Thi Đấu</title>
+  <!-- <link rel="stylesheet" href="style.css"> -->
+   <style>
+    * {
+  box-sizing: border-box;
+}
+
+body {
+  font-family: Arial, sans-serif;
+  background: #f2f2f2;
+  margin: 0;
+  padding: 20px;
+}
+
+.container {
+  max-width: 400px;
+  margin: 0 auto;
+  background: #fff;
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+  text-align: center;
+}
+
+input[type="text"] {
+  width: 80%;
+  padding: 10px;
+  margin: 10px 0;
+  font-size: 16px;
+}
+
+button {
+  padding: 10px 20px;
+  font-size: 16px;
+  cursor: pointer;
+  margin: 10px 0;
+  border: none;
+  background-color: #4285F4;
+  color: #fff;
+  border-radius: 4px;
+}
+
+button:hover {
+  background-color: #357ae8;
+}
+
+.error {
+  color: red;
+}
+
+.hidden {
+  display: none;
+}
+
+.link {
+  word-break: break-all;
+  margin-top: 10px;
+  font-weight: bold;
+}
+
+   </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Bốc Thăm Chọn Bảng Thi Đấu</h1>
+    <!-- Form nhập mã code -->
+    <div id="code-section">
+      <p>Nhập mã code được cung cấp:</p>
+      <input type="text" id="codeInput" placeholder="Nhập mã code">
+      <button id="submitCode">Xác nhận</button>
+      <p id="message" class="error"></p>
+    </div>
+
+    <!-- Khu vực hiển thị kết quả bốc thăm -->
+    <div id="result-section" class="hidden">
+      <p>Kết quả của bạn:</p>
+      <canvas id="resultCanvas" width="200" height="200"></canvas>
+      <button id="shareResult">Chia sẻ kết quả</button>
+      <p id="shareLink" class="link"></p>
+    </div>
+  </div>
+
+  <!-- <script src="script.js"></script> -->
+   <script>
+    // Danh sách mã code hợp lệ do người quản lí cung cấp
+const validCodes = [
+  "TH123",
+  "TH456",
+  "TH789",
+  "TH321",
+  "TH731",
+  "TH901",
+  "TH980",
+  "TH503",
+  "TH203",
+  "TH512",
+  "TH678",
+  "TH491",
+];
+
+// Các bảng thi đấu
+const brackets = ["A", "B", "C", "D"];
+
+// Dùng localStorage để lưu mã đã sử dụng (cho demo, mỗi trình duyệt riêng biệt)
+function getUsedCodes() {
+  const used = localStorage.getItem('usedCodes');
+  return used ? JSON.parse(used) : [];
+}
+
+function addUsedCode(code) {
+  const used = getUsedCodes();
+  used.push(code);
+  localStorage.setItem('usedCodes', JSON.stringify(used));
+}
+
+// Hàm vẽ kết quả lên canvas
+function drawResult(letter) {
+  const canvas = document.getElementById('resultCanvas');
+  const ctx = canvas.getContext('2d');
+  
+  // Xóa canvas trước (nếu có)
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  
+  // Tô nền
+  ctx.fillStyle = "#fefefe";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  
+  // Vẽ chữ
+  ctx.font = "bold 100px Arial";
+  ctx.fillStyle = "#333";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText(letter, canvas.width / 2, canvas.height / 2);
+}
+
+// Xử lý khi trang được tải: kiểm tra URL xem có kết quả được chia sẻ hay không
+document.addEventListener("DOMContentLoaded", function() {
+  const urlParams = new URLSearchParams(window.location.search);
+  const sharedResult = urlParams.get('result');
+  if (sharedResult && brackets.includes(sharedResult)) {
+    // Nếu có tham số result hợp lệ, ẩn phần nhập mã và hiển thị kết quả
+    document.getElementById('code-section').classList.add('hidden');
+    document.getElementById('result-section').classList.remove('hidden');
+    drawResult(sharedResult);
+    // Lưu kết quả vào thuộc tính dataset để có thể chia sẻ lại nếu cần
+    document.getElementById('shareResult').dataset.result = sharedResult;
+  }
+});
+
+// Xử lý nút xác nhận mã code
+document.getElementById('submitCode').addEventListener('click', function() {
+  const codeInput = document.getElementById('codeInput').value.trim();
+  const messageEl = document.getElementById('message');
+  messageEl.textContent = "";
+  
+  // Kiểm tra mã code có trong danh sách không
+  if (!validCodes.includes(codeInput)) {
+    messageEl.textContent = "Mã code không hợp lệ.";
+    return;
+  }
+  
+  // Kiểm tra mã code đã được sử dụng chưa
+  const usedCodes = getUsedCodes();
+  if (usedCodes.includes(codeInput)) {
+    messageEl.textContent = "Mã code này đã được sử dụng.";
+    return;
+  }
+  
+  // Nếu hợp lệ, tiến hành bốc thăm
+  const result = brackets[Math.floor(Math.random() * brackets.length)];
+  addUsedCode(codeInput);  // Đánh dấu mã code đã được sử dụng
+  
+  // Ẩn phần nhập code và hiển thị phần kết quả
+  document.getElementById('code-section').classList.add('hidden');
+  document.getElementById('result-section').classList.remove('hidden');
+  
+  // Vẽ kết quả lên canvas
+  drawResult(result);
+  
+  // Lưu kết quả vào dataset của nút chia sẻ để sử dụng cho việc tạo link
+  document.getElementById('shareResult').dataset.result = result;
+});
+
+// Xử lý nút chia sẻ kết quả
+document.getElementById('shareResult').addEventListener('click', function() {
+  const result = this.dataset.result;
+  // Tạo link chia sẻ với query ?result=...
+  const shareURL = window.location.origin + window.location.pathname + "?result=" + result;
+  
+  // Hiển thị link trong phần shareLink
+  const shareLinkEl = document.getElementById('shareLink');
+  shareLinkEl.textContent = "Link chia sẻ: " + shareURL;
+  
+  // Copy link vào clipboard nếu trình duyệt hỗ trợ
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(shareURL)
+      .then(() => {
+        shareLinkEl.textContent += " (đã copy vào clipboard)";
+      })
+      .catch((err) => {
+        console.error("Không copy được vào clipboard: ", err);
+      });
+  }
+});
+
+   </script>
+</body>
+</html>
