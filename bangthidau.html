@@ -56,14 +56,11 @@ button:hover {
 .hidden {
   display: none;
 }
-.code-section{
-  text-align: center;
-  display: flex;
-  flex-direction: column;
-}
+
 .resultCanvas{
   width: 200px;
   height: 200px;
+  display: block;
   margin-left: auto;
   margin-right: auto;
 }
@@ -80,7 +77,7 @@ button:hover {
     <h1>Chào mừng bạn đến với Giải đấu tại <br>Sân bóng chuyền Thiên Hương</h1> 
     <h3>Bốc Thăm Chọn Bảng Thi Đấu</h3>
     <!-- Form nhập mã code -->
-    <div id="code-section" class="code-section">
+    <div id="code-section">
       <p>Nhập mã code được cung cấp:</p>
       <input type="text" id="codeInput" placeholder="Nhập mã code">
       <button id="submitCode">Xác nhận</button>
@@ -88,7 +85,7 @@ button:hover {
     </div>
 
     <!-- Khu vực hiển thị kết quả bốc thăm -->
-    <div id="result-section" class="hidden code-section">
+    <div id="result-section" class="hidden">
       <p>Kết quả của bạn:</p>
       <canvas id="resultCanvas" class="resultCanvas" width="200" height="200"></canvas>
       <button id="shareResult">Chia sẻ kết quả</button>
