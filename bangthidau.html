@@ -107,6 +107,42 @@ const validCodes = [
 // Các bảng thi đấu
 const brackets = ["A", "B", "C", "D"];
 
+// Khóa bí mật dùng cho việc mã hóa kết quả (có thể thay đổi thành giá trị phức tạp hơn)
+const secretKey = "abc123";
+
+// Hàm băm đơn giản (không dùng cho mục đích bảo mật cao, chỉ dùng để xác thực token)
+function simpleHash(str) {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    hash = (hash << 5) - hash + str.charCodeAt(i);
+    hash |= 0; // Ép về số nguyên 32 bit
+  }
+  return hash.toString();
+}
+
+// Hàm mã hóa kết quả: tạo token từ kết quả và khóa bí mật
+function encodeResult(result) {
+  const hash = simpleHash(result + secretKey);
+  const data = { r: result, h: hash };
+  return btoa(JSON.stringify(data));
+}
+
+// Hàm giải mã token: trả về kết quả nếu token hợp lệ, ngược lại trả về null
+function decodeResult(token) {
+  try {
+    const jsonStr = atob(token);
+    const data = JSON.parse(jsonStr);
+    if (data && data.r && data.h) {
+      if (data.h === simpleHash(data.r + secretKey)) {
+         return data.r;
+      }
+    }
+  } catch (e) {
+    console.error("Lỗi giải mã token: ", e);
+  }
+  return null;
+}
+
 // Dùng localStorage để lưu mã đã sử dụng (cho demo, mỗi trình duyệt riêng biệt)
 function getUsedCodes() {
   const used = localStorage.getItem('usedCodes');
@@ -139,17 +175,22 @@ function drawResult(letter) {
   ctx.fillText(letter, canvas.width / 2, canvas.height / 2);
 }
 
-// Xử lý khi trang được tải: kiểm tra URL xem có kết quả được chia sẻ hay không
+// Khi trang được tải, kiểm tra URL xem có token kết quả hay không
 document.addEventListener("DOMContentLoaded", function() {
   const urlParams = new URLSearchParams(window.location.search);
-  const sharedResult = urlParams.get('result');
-  if (sharedResult && brackets.includes(sharedResult)) {
-    // Nếu có tham số result hợp lệ, ẩn phần nhập mã và hiển thị kết quả
-    document.getElementById('code-section').classList.add('hidden');
-    document.getElementById('result-section').classList.remove('hidden');
-    drawResult(sharedResult);
-    // Lưu kết quả vào thuộc tính dataset để có thể chia sẻ lại nếu cần
-    document.getElementById('shareResult').dataset.result = sharedResult;
+  const token = urlParams.get('token');
+  if (token) {
+    const decodedResult = decodeResult(token);
+    if (decodedResult && brackets.includes(decodedResult)) {
+      // Nếu token hợp lệ, ẩn phần nhập mã code và hiển thị kết quả
+      document.getElementById('code-section').classList.add('hidden');
+      document.getElementById('result-section').classList.remove('hidden');
+      drawResult(decodedResult);
+      // Lưu kết quả vào dataset của nút chia sẻ để chia sẻ lại nếu cần
+      document.getElementById('shareResult').dataset.result = decodedResult;
+    } else {
+      console.error("Token không hợp lệ!");
+    }
   }
 });
 
@@ -176,22 +217,24 @@ document.getElementById('submitCode').addEventListener('click', function() {
   const result = brackets[Math.floor(Math.random() * brackets.length)];
   addUsedCode(codeInput);  // Đánh dấu mã code đã được sử dụng
   
-  // Ẩn phần nhập code và hiển thị phần kết quả
+  // Ẩn phần nhập mã code và hiển thị phần kết quả
   document.getElementById('code-section').classList.add('hidden');
   document.getElementById('result-section').classList.remove('hidden');
   
   // Vẽ kết quả lên canvas
   drawResult(result);
   
-  // Lưu kết quả vào dataset của nút chia sẻ để sử dụng cho việc tạo link
+  // Lưu kết quả vào dataset của nút chia sẻ
   document.getElementById('shareResult').dataset.result = result;
 });
 
 // Xử lý nút chia sẻ kết quả
 document.getElementById('shareResult').addEventListener('click', function() {
   const result = this.dataset.result;
-  // Tạo link chia sẻ với query ?result=...
-  const shareURL = window.location.origin + window.location.pathname + "?result=" + result;
+  // Mã hóa kết quả thành token
+  const token = encodeResult(result);
+  // Tạo link chia sẻ với query ?token=...
+  const shareURL = window.location.origin + window.location.pathname + "?token=" + token;
   
   // Hiển thị link trong phần shareLink
   const shareLinkEl = document.getElementById('shareLink');
@@ -208,6 +251,7 @@ document.getElementById('shareResult').addEventListener('click', function() {
       });
   }
 });
+
 
    </script>
 </body>
